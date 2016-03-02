@@ -1,15 +1,17 @@
 //nodeMCU v1.0 (black) with Arduino IDE
 //stream temperature data DS18B20 with 1wire on ESP8266 ESP12-E (nodeMCU v1.0)
-//shin-ajaran.blogspot.com
+//http://shin-ajaran.blogspot.co.uk/2015/09/stream-iot-sensor-data-esp8266-nodemcu.html
 //nodemcu pinout https://github.com/esp8266/Arduino/issues/584
 #include <ESP8266WiFi.h>
 #include <OneWire.h>
 #include <DallasTemperature.h>
 
-//Def
-#define myPeriodic 15 //in sec | Thingspeak pub is 15sec
-#define ONE_WIRE_BUS 2  // DS18B20 on arduino pin2 corresponds to D4 on physical board
-//#define mySSR 0  // Solid State Relay on pin 0
+
+#define ReportInterval 60 //in sec | Thingspeak pub is 15sec but 60 second interval is fine
+#define ONE_WIRE_BUS D4  // DS18B20 on arduino pin2 corresponds to D4 on physical board
+#define AlarmLED D6  // AlarmLED lights when temps go out of nominal range
+#define NormLED D8  //NormLed is light when temps are nominal
+
 
 OneWire oneWire(ONE_WIRE_BUS);
 DallasTemperature DS18B20(&oneWire);
@@ -40,7 +42,7 @@ void loop() {
   //}
   
   sendTeperatureTS(temp);
-  int count = myPeriodic;
+  int count = ReportInterval;
   while(count--)
   delay(1000);
 }
