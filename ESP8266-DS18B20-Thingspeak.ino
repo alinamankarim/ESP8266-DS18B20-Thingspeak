@@ -20,8 +20,13 @@ const char* server = "api.thingspeak.com";
 String apiKey ="your API key here";
 const char* MY_SSID = "your SSID here"; 
 const char* MY_PWD = "your SSID password here";
-const float LowTemp = 20 //Lower bound for nominal temp
-const float Hightemp = 31 //upper bound for nominal temp
+
+//Lower bound for nominal temp
+const float LowTemp = 19;
+
+//upper bound for nominal temp 
+const float HighTemp = 31;
+
 int sent = 0;
 void setup() {
   Serial.begin(115200);
@@ -37,14 +42,14 @@ void loop() {
   Serial.print(String(sent)+" Temperature: ");
   Serial.println(temp);
   
-   If (temp <= LowTemp || temp >= HighTemp){
-    digitalWrite(AlarmLED, HIGH)
-    digitalWrite(NormLED, LOW)
+  if (temp <= LowTemp || temp >= HighTemp){
+    digitalWrite(AlarmLED, HIGH);
+    digitalWrite(NormLED, LOW);
   }
   else
   {
-    digitalWrite(AlarmLED, LOW)
-    digitalWrite(NormLED, HIGH)
+    digitalWrite(AlarmLED, LOW);
+    digitalWrite(NormLED, HIGH);
   }
   
   sendTeperatureTS(temp);
