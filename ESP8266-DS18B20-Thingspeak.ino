@@ -20,6 +20,13 @@ const char* server = "api.thingspeak.com";
 String apiKey ="your API key here";
 const char* MY_SSID = "your SSID here"; 
 const char* MY_PWD = "your SSID password here";
+
+//Lower bound for nominal temp
+const float LowTemp = 19;
+
+//upper bound for nominal temp 
+const float HighTemp = 31;
+
 int sent = 0;
 void setup() {
   Serial.begin(115200);
@@ -35,11 +42,15 @@ void loop() {
   Serial.print(String(sent)+" Temperature: ");
   Serial.println(temp);
   
-  //if (temp != prevTemp)
-  //{
-  //sendTeperatureTS(temp);
-  //prevTemp = temp;
-  //}
+  if (temp <= LowTemp || temp >= HighTemp){
+    digitalWrite(AlarmLED, HIGH);
+    digitalWrite(NormLED, LOW);
+  }
+  else
+  {
+    digitalWrite(AlarmLED, LOW);
+    digitalWrite(NormLED, HIGH);
+  }
   
   sendTeperatureTS(temp);
   int count = ReportInterval;
@@ -60,6 +71,7 @@ void connectWifi()
   Serial.println("Connected");
   Serial.println("");  
 }//end connect
+
 
 void sendTeperatureTS(float temp)
 {  
