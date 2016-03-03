@@ -1,7 +1,10 @@
-//nodeMCU v1.0 (black) with Arduino IDE
-//stream temperature data DS18B20 with 1wire on ESP8266 ESP12-E (nodeMCU v1.0)
-//http://shin-ajaran.blogspot.co.uk/2015/09/stream-iot-sensor-data-esp8266-nodemcu.html
+//nodeMCU & WeMos with Arduino IDE
+//Stream temperature data DS18B20 with 1wire on ESP8266 ESP12-E (nodeMCU v1.0) to thingspeak.com,
+//control local LEDs and drive local relay. 
+//Based on http://shin-ajaran.blogspot.co.uk/2015/09/stream-iot-sensor-data-esp8266-nodemcu.html
 //nodemcu pinout https://github.com/esp8266/Arduino/issues/584
+
+//
 
 
 #include <ESP8266WiFi.h>
@@ -12,7 +15,7 @@
 #define ReportInterval 60 //in sec | Thingspeak pub is 15sec but 60 second interval is fine
 #define ONE_WIRE_BUS D4  // DS18B20 on arduino pin2 corresponds to D4 on physical board
 #define AlarmLED D6  // AlarmLED lights when temps go out of nominal range.
-#define NormLED D8  //NormLed is light when temps are nominal.
+#define NormLED D8  //NormLed is lit when temps are nominal.
 #define FanRelay D7 //Digial pin for relay control
 
 OneWire oneWire(ONE_WIRE_BUS);
@@ -41,6 +44,10 @@ void loop() {
   temp = DS18B20.getTempCByIndex(0);
   Serial.print(String(sent)+" Temperature: ");
   Serial.println(temp);
+
+
+  //Change the following section if relay control is required for low temperature activation.
+  //replace 'temp >= HighTemp' with 'temp <= LowTemp'
   
   if (temp >= HighTemp)
   {
