@@ -13,7 +13,7 @@
 #define ONE_WIRE_BUS D4  // DS18B20 on arduino pin2 corresponds to D4 on physical board
 #define AlarmLED D6  // AlarmLED lights when temps go out of nominal range.
 #define NormLED D8  //NormLed is light when temps are nominal.
-#define FanRelay D7 //Digial pin for fan control
+#define FanRelay D7 //Digial pin for relay control
 
 OneWire oneWire(ONE_WIRE_BUS);
 DallasTemperature DS18B20(&oneWire);
@@ -37,25 +37,25 @@ void setup() {
 
 void loop() {
   float temp;
-  //char buffer[10];
   DS18B20.requestTemperatures(); 
   temp = DS18B20.getTempCByIndex(0);
-  //String tempC = dtostrf(temp, 4, 1, buffer);//handled in sendTemp()
   Serial.print(String(sent)+" Temperature: ");
   Serial.println(temp);
   
   if (temp >= HighTemp)
   {
 	  digitalWrite(FanRelay, HIGH);
+  }
   else
+  {
 	  digitalWrite(FanRelay, LOW);
   }
 
   if (temp <= LowTemp || temp >= HighTemp)
   {
-	digitalWrite(AlarmLED, HIGH);
+    digitalWrite(AlarmLED, HIGH);
     digitalWrite(NormLED, LOW);
-	digitalWrite(FanRelay, LOW);
+	  digitalWrite(FanRelay, LOW);
   }
   else
   {
