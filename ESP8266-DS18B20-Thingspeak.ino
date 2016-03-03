@@ -2,6 +2,8 @@
 //stream temperature data DS18B20 with 1wire on ESP8266 ESP12-E (nodeMCU v1.0)
 //http://shin-ajaran.blogspot.co.uk/2015/09/stream-iot-sensor-data-esp8266-nodemcu.html
 //nodemcu pinout https://github.com/esp8266/Arduino/issues/584
+
+
 #include <ESP8266WiFi.h>
 #include <OneWire.h>
 #include <DallasTemperature.h>
