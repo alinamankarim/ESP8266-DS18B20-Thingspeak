@@ -26,10 +26,10 @@ String apiKey ="your API key here";
 const char* MY_SSID = "your SSID here"; 
 const char* MY_PWD = "your SSID password here";
 
-//Lower bound for nominal temp
+//Lower bound for nominal temp in C
 const float LowTemp = 19;
 
-//upper bound for nominal temp 
+//upper bound for nominal temp in C
 const float HighTemp = 31;
 
 int sent = 0;
