@@ -1,3 +1,7 @@
+#include <DallasTemperature.h>
+
+#include <OneWire.h>
+
 //nodeMCU v1.0 (black) with Arduino IDE
 //stream temperature data DS18B20 with 1wire on ESP8266 ESP12-E (nodeMCU v1.0)
 //http://shin-ajaran.blogspot.co.uk/2015/09/stream-iot-sensor-data-esp8266-nodemcu.html
@@ -5,12 +9,9 @@
 
 
 #include <ESP8266WiFi.h>
-#include <OneWire.h>
-#include <DallasTemperature.h>
-
 
 #define ReportInterval 60 //in sec | Thingspeak pub is 15sec but 60 second interval is fine
-#define ONE_WIRE_BUS D4  // DS18B20 on arduino pin2 corresponds to D4 on physical board
+#define ONE_WIRE_BUS 2  // DS18B20 on arduino pin2 corresponds to D4 on physical board
 #define AlarmLED D6  // AlarmLED lights when temps go out of nominal range.
 #define NormLED D8  //NormLed is light when temps are nominal.
 
@@ -19,9 +20,9 @@ OneWire oneWire(ONE_WIRE_BUS);
 DallasTemperature DS18B20(&oneWire);
 float prevTemp = 0;
 const char* server = "api.thingspeak.com";
-String apiKey ="your API key here";
-const char* MY_SSID = "your SSID here"; 
-const char* MY_PWD = "your SSID password here";
+String apiKey ="9RDRUKDMI0VF4NT8";
+const char* MY_SSID = "VM166468-2G"; 
+const char* MY_PWD = "tmwznfta";
 
 //Lower bound for nominal temp
 const float LowTemp = 19;

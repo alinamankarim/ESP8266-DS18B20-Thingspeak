@@ -8,12 +8,10 @@
 
 
 #include <ESP8266WiFi.h>
-#include <OneWire.h>
-#include <DallasTemperature.h>
 
 
 #define ReportInterval 60 //in sec | Thingspeak pub is 15sec but 60 second interval is fine
-#define ONE_WIRE_BUS D4  // DS18B20 on arduino pin2 corresponds to D4 on physical board
+#define ONE_WIRE_BUS 2  // DS18B20 on arduino pin2 corresponds to D4 on physical board
 #define AlarmLED D6  // AlarmLED lights when temps go out of nominal range.
 #define NormLED D8  //NormLed is lit when temps are nominal.
 #define FanRelay D7 //Digial pin for relay control
