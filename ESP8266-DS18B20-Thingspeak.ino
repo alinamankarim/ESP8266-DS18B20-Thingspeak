@@ -141,7 +141,7 @@ void loop() {
     Serial.println("Temperature:");
     Serial.println(temp);
   }
-  // ThingSpeak.writeFields(myChannelNumber, myWriteAPIKey);  //Write fields to Thingspeak, comment this line out
+  ThingSpeak.writeFields(myChannelNumber, myWriteAPIKey);  //Write fields to Thingspeak, comment this line out
                                                               //if you wish to test without uploading data.
     Serial.println("Data sent to ThinkSpeak");
   delay(updatePeriod * 1000);
