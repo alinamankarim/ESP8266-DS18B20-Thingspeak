@@ -1,106 +1,148 @@
+/*  ESP8266, DS18B20 with updates to ThinkSpeak.com
+ *   
+ *  Supports multiple DS18B20 sensors on one pin, see Dallas datasheet for 
+ *  wiring schematics.
+ *  
+ *  Requires free ThingSpeak account: https://thingspeak.com/
+ *  Requires the following libraries to be installed: 
+ *  
+ *  OneWire.h - Built in.
+ *  ESP8266Wifi.h - Built in to ESP8266/Arduino integration.
+ *  DallasTemperature.h - Dallas Temperature sensor  library by Miles Burton: 
+ *  https://github.com/milesburton/Arduino-Temperature-Control-Library 
+ *  ThingSpeak.h - Offical ThinkSpeak library by Mathworks:
+ *  https://github.com/mathworks/thingspeak-arduino
+ *  
+ *  Portions of code taken from Dallas Temperature libray examples by Miles Burton.
+ *  
+ *  To test sensor readings without uploading to ThinkSpeak cooment out 
+ *  line 144 (ThingSpeak.writeFields(myChannelNumber, myWriteAPIKey);)
+ *  
+ */
+
 #include <DallasTemperature.h>
-
 #include <OneWire.h>
-
-//nodeMCU v1.0 (black) with Arduino IDE
-//stream temperature data DS18B20 with 1wire on ESP8266 ESP12-E (nodeMCU v1.0)
-//http://shin-ajaran.blogspot.co.uk/2015/09/stream-iot-sensor-data-esp8266-nodemcu.html
-//nodemcu pinout https://github.com/esp8266/Arduino/issues/584
-
-
+#include <ThingSpeak.h> 
 #include <ESP8266WiFi.h>
 
-#define ReportInterval 60 //in sec | Thingspeak pub is 15sec but 60 second interval is fine
-#define ONE_WIRE_BUS 2  // DS18B20 on arduino pin2 corresponds to D4 on physical board
-#define AlarmLED D6  // AlarmLED lights when temps go out of nominal range.
-#define NormLED D8  //NormLed is light when temps are nominal.
+// User changeable vaules go here.
+
+#define ONE_WIRE_BUS D4                           // Digital pin DS18B20 is connected to.
+#define TEMPERATURE_PRECISION 11                  // Set sensor precision.  Valid options 8,10,11,12 Lower is faster but less precise
+
+unsigned long myChannelNumber = 123456;            // Thingspeak channel ID here
+const char * myWriteAPIKey = "YOUR_API_WRITE_KEY";  // Write API key here
+const char* ssid     = "WIRELESS_SSID";           // SSID of wireless network
+const char* password = "WIRELESS_PASSWORD";       // Password for wireless network
+
+int fieldStart = 1;                               // Field number to start populating ThingSpeak channel data, leave at 
+                                                  // 1 if this is the only device reporting to that channel.  
+                                                  // If more than one device this should be the FIRST FREE field.
+
+int updatePeriod = 120;                            //delay in seconds to update to ThingSpeak.  Should be set to not less than 15.
 
 
+int status = WL_IDLE_STATUS;
+WiFiClient  client;
 OneWire oneWire(ONE_WIRE_BUS);
-DallasTemperature DS18B20(&oneWire);
-float prevTemp = 0;
-const char* server = "api.thingspeak.com";
-String apiKey ="9RDRUKDMI0VF4NT8";
-const char* MY_SSID = "VM166468-2G"; 
-const char* MY_PWD = "tmwznfta";
+DallasTemperature sensors(&oneWire);
 
-//Lower bound for nominal temp
-const float LowTemp = 19;
 
-//upper bound for nominal temp 
-const float HighTemp = 31;
+int numberOfDevices; // Number of temperature devices found
+DeviceAddress tempDeviceAddress; // We'll use this variable to store a found device address
 
-int sent = 0;
 void setup() {
-  Serial.begin(115200);
-  connectWifi();
+ Serial.begin(115200);
+  delay(10);
+
+  Serial.println();
+  Serial.println();
+  Serial.print("Connecting to ");
+  Serial.println(ssid);
+  
+  WiFi.begin(ssid, password);
+  
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+
+  Serial.println("");
+  Serial.println("WiFi connected");  
+  Serial.println("IP address: ");
+  Serial.println(WiFi.localIP()); 
+
+
+  ThingSpeak.begin(client);
+  sensors.begin();
+  
+  // Grab a count of devices on the wire
+  numberOfDevices = sensors.getDeviceCount();
+  
+  // locate devices on the bus
+  Serial.print("Locating devices...");
+  
+  Serial.print("Found ");
+  Serial.print(numberOfDevices, DEC);
+  Serial.println(" devices.");
+
+  // report parasite power requirements
+  Serial.print("Parasite power is: "); 
+  if (sensors.isParasitePowerMode()) Serial.println("ON");
+  else Serial.println("OFF");
+  
+  // Loop through each device, print out address
+  for(int i=0;i<numberOfDevices; i++)
+  {
+    // Search the wire for address
+    if(sensors.getAddress(tempDeviceAddress, i))
+  {
+    Serial.print("Found device ");
+    Serial.print(i, DEC);
+    Serial.print(" with address: ");
+    printAddress(tempDeviceAddress);
+    Serial.println();
+    
+    Serial.print("Setting resolution to ");
+    Serial.println(TEMPERATURE_PRECISION, DEC);
+    
+    // set the resolution to TEMPERATURE_PRECISION bit (Each Dallas/Maxim device is capable of several different resolutions)
+    sensors.setResolution(tempDeviceAddress, TEMPERATURE_PRECISION);
+    
+    Serial.print("Resolution actually set to: ");
+    Serial.print(sensors.getResolution(tempDeviceAddress), DEC); 
+    Serial.println();
+  }else{
+    Serial.print("Found ghost device at ");
+    Serial.print(i, DEC);
+    Serial.print(" but could not detect address. Check power and cabling");
+  }
+  }
+}
+
+// function to print a device address
+void printAddress(DeviceAddress deviceAddress)
+{
+  for (uint8_t i = 0; i < 8; i++)
+  {
+    if (deviceAddress[i] < 16) Serial.print("0");
+    Serial.print(deviceAddress[i], HEX);
+  }
 }
 
 void loop() {
-  float temp;
-  //char buffer[10];
-  DS18B20.requestTemperatures(); 
-  temp = DS18B20.getTempCByIndex(0);
-  //String tempC = dtostrf(temp, 4, 1, buffer);//handled in sendTemp()
-  Serial.print(String(sent)+" Temperature: ");
-  Serial.println(temp);
-  
-  if (temp <= LowTemp || temp >= HighTemp){
-    digitalWrite(AlarmLED, HIGH);
-    digitalWrite(NormLED, LOW);
+  sensors.requestTemperatures();
+  // Itterate through each sensor and send readings to ThinkSpeak.  
+  for (int i=0; i<=(numberOfDevices - 1); i++){
+    float temp=sensors.getTempCByIndex(i);
+    ThingSpeak.setField(i+fieldStart,temp);
+    Serial.println("Sensor #:");
+    Serial.println(i);
+    Serial.println("Temperature:");
+    Serial.println(temp);
   }
-  else
-  {
-    digitalWrite(AlarmLED, LOW);
-    digitalWrite(NormLED, HIGH);
-  }
-  
-  sendTeperatureTS(temp);
-  int count = ReportInterval;
-  while(count--)
-  delay(1000);
+  // ThingSpeak.writeFields(myChannelNumber, myWriteAPIKey);  //Write fields to Thingspeak, comment this line out
+                                                              //if you wish to test without uploading data.
+    Serial.println("Data sent to ThinkSpeak");
+  delay(updatePeriod * 1000);
 }
-
-void connectWifi()
-{
-  Serial.print("Connecting to "+*MY_SSID);
-  WiFi.begin(MY_SSID, MY_PWD);
-  while (WiFi.status() != WL_CONNECTED) {
-  delay(1000);
-  Serial.print(".");
-  }
-  
-  Serial.println("");
-  Serial.println("Connected");
-  Serial.println("");  
-}//end connect
-
-
-void sendTeperatureTS(float temp)
-{  
-   WiFiClient client;
-  
-   if (client.connect(server, 80)) { // use ip 184.106.153.149 or api.thingspeak.com
-   Serial.println("WiFi Client connected ");
-   
-   String postStr = apiKey;
-   postStr += "&field1=";
-   postStr += String(temp);
-   postStr += "\r\n\r\n";
-   
-   client.print("POST /update HTTP/1.1\n");
-   client.print("Host: api.thingspeak.com\n");
-   client.print("Connection: close\n");
-   client.print("X-THINGSPEAKAPIKEY: " + apiKey + "\n");
-   client.print("Content-Type: application/x-www-form-urlencoded\n");
-   client.print("Content-Length: ");
-   client.print(postStr.length());
-   client.print("\n\n");
-   client.print(postStr);
-   delay(1000);
-   
-   }//end if
-   sent++;
- client.stop();
-}//end send
-
